@@ -1,4 +1,6 @@
 .build/
+.build-release/
 .swiftpm/
 Package.resolved
 DerivedData/
+dist/
