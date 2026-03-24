@@ -40,6 +40,8 @@ Artifacts are written to:
 
 This repository includes a GitHub Actions workflow that builds a macOS release artifact and uploads a `.dmg` to GitHub Releases.
 
+The app icon source is stored at `Assets/icon.png`.
+
 To publish a release manually:
 
 ```bash
