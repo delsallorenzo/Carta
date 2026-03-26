@@ -33,8 +33,7 @@ enum CartaFontFamily: String, CaseIterable {
     }
 }
 
-@MainActor
-final class CartaFontSettings: ObservableObject {
+final class CartaFontSettings: ObservableObject, @unchecked Sendable {
     static let shared = CartaFontSettings()
 
     private let key = "cartaFontFamily"
