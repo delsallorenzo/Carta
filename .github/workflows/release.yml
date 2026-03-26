@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "v*"
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -25,7 +27,26 @@ jobs:
       - name: Build app and DMG
         run: ./Scripts/package_macos.sh
 
-      - name: Upload release asset
+      - name: Determine version tag
+        id: version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          else
+            VERSION=$(grep -A1 CFBundleShortVersionString Scripts/package_macos.sh | grep '<string>' | sed 's/.*<string>\(.*\)<\/string>.*/\1/')
+            echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Carta ${{ steps.version.outputs.tag }}
+          body: |
+            ## Carta ${{ steps.version.outputs.tag }}
+
+            ### Changes
+            - Font selection: choose between Terminal (Menlo), Sans Serif (system font), or Serif (Times New Roman)
+            - All paste operations now insert plain text only, preventing style contamination
+            - Font choice persists across app restarts and applies to all notes globally
           files: dist/Carta.dmg
