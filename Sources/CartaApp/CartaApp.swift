@@ -56,7 +56,7 @@ final class CartaFontSettings: ObservableObject, @unchecked Sendable {
 @MainActor
 final class CartaAppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.regular)
+        NSApp.setActivationPolicy(.accessory)
         NSApp.activate(ignoringOtherApps: true)
     }
 }
@@ -764,8 +764,9 @@ private struct CartaHoverButton<Label: View>: View {
 private struct CartaNoteWindowView: View {
     let requestedNoteID: String?
 
-    private let topMargin: CGFloat = 0
-    private let sideMargin: CGFloat = 6
+    private let topMargin: CGFloat = 16
+    private let sideMargin: CGFloat = 16
+    private let bottomBarHeight: CGFloat = 28
     private let bottomMargin: CGFloat = 0
 
     @EnvironmentObject private var noteStore: CartaNoteStore
@@ -786,7 +787,7 @@ private struct CartaNoteWindowView: View {
     }
 
     private var verticalInset: CGFloat {
-        topMargin + bottomMargin + CartaTerminalMetrics.scrollBottomInset
+        topMargin + bottomBarHeight + CartaTerminalMetrics.scrollBottomInset
     }
 
     var body: some View {
@@ -794,7 +795,7 @@ private struct CartaNoteWindowView: View {
             if resolvedNoteID.isEmpty {
                 Color(nsColor: .textBackgroundColor)
             } else {
-                ZStack(alignment: .topLeading) {
+                VStack(spacing: 0) {
                     CartaRichTextView(
                         richTextData: Binding(
                             get: { noteStore.note(withID: resolvedNoteID)?.rtfData ?? Data() },
@@ -804,7 +805,8 @@ private struct CartaNoteWindowView: View {
                     .environmentObject(editorState)
                     .padding(.top, topMargin)
                     .padding(.horizontal, sideMargin)
-                    .padding(.bottom, bottomMargin)
+
+                    CartaBottomBar(date: titleDate)
                 }
                 .background(Color(nsColor: .textBackgroundColor))
                 .frame(minWidth: 120, minHeight: 80)
@@ -837,6 +839,26 @@ private struct CartaNoteWindowView: View {
     private func resolveWindowNote() {
         resolvedNoteID = noteStore.resolveNoteID(requestedNoteID)
         noteStore.markOpenedNote(noteID: resolvedNoteID)
+    }
+}
+
+private struct CartaBottomBar: View {
+    let date: Date?
+
+    var body: some View {
+        HStack {
+            if let date {
+                Text(CartaWindowTitleFormatter.fullFormatter.string(from: date))
+                    .font(.system(size: 10, weight: .regular))
+                    .foregroundStyle(Color(nsColor: .tertiaryLabelColor))
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .frame(height: 28)
+        .overlay(alignment: .top) {
+            Divider()
+        }
     }
 }
 
@@ -873,18 +895,11 @@ private struct CartaWindowConfigurator: NSViewRepresentable {
 
     private func configure(window: NSWindow, coordinator: Coordinator) {
         window.level = .floating
-        window.collectionBehavior.insert(.fullScreenAuxiliary)
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.isReleasedWhenClosed = false
         window.identifier = noteID.isEmpty ? nil : NSUserInterfaceItemIdentifier(noteID)
-        if let titleDate {
-            window.title = CartaWindowTitleFormatter.title(
-                for: titleDate,
-                availableWidth: window.frame.width
-            )
-        } else {
-            window.title = "Carta"
-        }
-        window.titleVisibility = .visible
+        window.title = "Carta"
+        window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = false
         window.isMovableByWindowBackground = true
         window.backgroundColor = .windowBackgroundColor
